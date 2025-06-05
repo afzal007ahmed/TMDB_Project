@@ -1,0 +1,52 @@
+import axios, { AxiosError } from "axios";
+import { catchError, from, map, mergeMap, of, type Observable } from "rxjs";
+import type { Action } from "@reduxjs/toolkit";
+import { ofType } from "redux-observable";
+import { fetchAccountStatesforRatingMovie, fetchAccountStatesforRatingMovieFailed, fetchAccountStatesforRatingMovieSuccess } from "./sliceAccountStateforRating";
+import type { TvAccountStates } from "@/Pages/SinglePageTv/utils/utils";
+
+async function getAccountSatates(body: {
+  session_id: string | null;
+  media_id: number;
+  guest_session_id: string | null;
+}): Promise<TvAccountStates> {
+  try {
+    const queryParam = body.guest_session_id
+      ? `guest_session_id=${body.guest_session_id}`
+      : `session_id=${body.session_id}`;
+
+    const response = await axios.get(
+      `https://api.themoviedb.org/3/movie/${body.media_id}/account_states?${queryParam}`,
+      {
+        headers: {
+          Authorization: "Bearer " + import.meta.env.VITE_API_KEY,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data.status_message);
+    }
+    throw new Error((error as AxiosError).message);
+  }
+}
+
+const epicAccountStatesfoRatingMovie = (action$: Observable<Action>) =>
+  action$.pipe(
+    ofType(fetchAccountStatesforRatingMovie.type),
+    mergeMap((action) => {
+      const { media_id, session_id , guest_sesson_id} = (
+        action as ReturnType<typeof fetchAccountStatesforRatingMovie>
+      ).payload;
+      return from(
+        getAccountSatates({ session_id: session_id, media_id: media_id , guest_session_id:guest_sesson_id })
+      ).pipe(
+        map((res) => fetchAccountStatesforRatingMovieSuccess(res)),
+        catchError((err) => of(fetchAccountStatesforRatingMovieFailed(err.message)))
+      );
+    }),
+    catchError((err) => of(fetchAccountStatesforRatingMovieFailed(err.message)))
+  );
+
+export default epicAccountStatesfoRatingMovie;
