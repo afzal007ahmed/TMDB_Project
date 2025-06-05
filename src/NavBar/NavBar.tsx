@@ -1,4 +1,4 @@
-import { Bell, CheckCircle, Plus, Search, UserCircle } from "lucide-react"
+import {  CheckCircle, UserCircle } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
